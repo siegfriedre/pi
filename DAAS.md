@@ -53,6 +53,17 @@ $env:DEEPSEEK_API_KEY = "你的密钥"
 
 ## 验证和后续升级
 
+根目录 `scripts/` 只保留被当前开发流程调用的四个脚本：
+
+| 脚本 | 用途 |
+| --- | --- |
+| `check-pinned-deps.mjs` | 检查外部直接依赖是否固定版本 |
+| `check-runtime-deps.mjs` | 检查源码导入的运行依赖是否声明完整 |
+| `check-ts-relative-imports.mjs` | 检查 TypeScript 相对导入写法 |
+| `check-lockfile-commit.mjs` | 提交时检查是否意外修改依赖锁文件 |
+
+这四个脚本不参与日常对话，也不会主动联网。上游模型目录生成、发行打包、性能分析、统计和一次性迁移脚本已经移除。根目录 `test.sh` 是 `npm run test:daas` 的便捷入口；Windows 的 `start.ps1` / `pi-test.ps1` 及 Linux/macOS 的 `pi-test.sh` 继续用于源码启动。
+
 ```bash
 npm run check
 npm run test:daas
