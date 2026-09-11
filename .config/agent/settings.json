@@ -1,0 +1,9 @@
+{
+	"defaultProvider": "deepseek",
+	"defaultModel": "deepseek-flash",
+	"defaultThinkingLevel": "high",
+	"enableInstallTelemetry": false,
+	"markdown": {
+		"mermaid": "off"
+	}
+}

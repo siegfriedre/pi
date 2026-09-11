@@ -1,12 +1,13 @@
 import { join } from "node:path";
-import { getDocsPath } from "../config.ts";
+import { getAgentDir, getDocsPath } from "../config.ts";
 
 const UNKNOWN_PROVIDER = "unknown";
 
 export function getProviderLoginHelp(): string {
 	return [
-		"Use /login to log into a provider via OAuth or API key. See:",
-		`  ${join(getDocsPath(), "providers.md")}`,
+		"Set DEEPSEEK_API_KEY before starting Daas, or configure another OpenAI-compatible API key locally.",
+		`Models: ${join(getAgentDir(), "models.json")}`,
+		"OAuth login and online model discovery are unavailable. See:",
 		`  ${join(getDocsPath(), "models.md")}`,
 	].join("\n");
 }

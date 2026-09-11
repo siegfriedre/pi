@@ -504,6 +504,10 @@ export const APP_TITLE: string = piConfigName ? APP_NAME : "π";
 export const CONFIG_DIR_NAME: string = pkg.piConfig?.configDir || ".pi";
 export const VERSION: string = pkg.version || "0.0.0";
 
+// Daas has no online management services. Model API traffic remains enabled.
+process.env.PI_OFFLINE = "1";
+process.env.PI_SKIP_VERSION_CHECK = "1";
+
 // e.g., PI_CODING_AGENT_DIR or TAU_CODING_AGENT_DIR
 export const ENV_AGENT_DIR = `${APP_NAME.toUpperCase()}_CODING_AGENT_DIR`;
 export const ENV_SESSION_DIR = `${APP_NAME.toUpperCase()}_CODING_AGENT_SESSION_DIR`;
@@ -530,7 +534,23 @@ export function getAgentDir(): string {
 	if (envDir) {
 		return expandTildePath(envDir);
 	}
+	const localAgentDir = getRepositoryAgentDir();
+	if (localAgentDir) return localAgentDir;
 	return join(homedir(), CONFIG_DIR_NAME, "agent");
+}
+
+/** Locate portable configuration relative to the installation, never the user's cwd. */
+export function getRepositoryAgentDir(packageDir: string = getPackageDir()): string | undefined {
+	let dir = resolve(packageDir);
+	while (true) {
+		if (existsSync(join(dir, "packages", "coding-agent", "package.json"))) {
+			const configDir = join(dir, ".config");
+			return existsSync(configDir) ? join(configDir, "agent") : undefined;
+		}
+		const parent = dirname(dir);
+		if (parent === dir) return undefined;
+		dir = parent;
+	}
 }
 
 /** Get path to user's custom themes directory */

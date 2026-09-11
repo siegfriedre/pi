@@ -6,6 +6,16 @@
 		"module": "NodeNext",
 		"moduleResolution": "NodeNext"
 	},
-	"include": ["src/**/*.ts"],
-	"exclude": ["node_modules", "dist", "**/*.d.ts", "src/**/*.d.ts"]
+	"include": [
+		"src/index.ts",
+		"src/compat.ts",
+		"src/oauth.ts",
+		"src/providers/all.ts"
+	],
+	"exclude": [
+		"node_modules",
+		"dist",
+		"**/*.d.ts",
+		"src/**/*.d.ts"
+	]
 }

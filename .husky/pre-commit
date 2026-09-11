@@ -16,21 +16,21 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-RUN_BROWSER_SMOKE=0
+RUN_DAAS_TESTS=0
 for file in $STAGED_FILES; do
   case "$file" in
-    packages/ai/*|packages/web-ui/*|package.json|package-lock.json)
-      RUN_BROWSER_SMOKE=1
+    packages/*|.config/*|test/*|package.json|package-lock.json)
+      RUN_DAAS_TESTS=1
       break
       ;;
   esac
 done
 
-if [ $RUN_BROWSER_SMOKE -eq 1 ]; then
-  echo "Running browser smoke check..."
-  npm run check:browser-smoke
+if [ $RUN_DAAS_TESTS -eq 1 ]; then
+  echo "Running Daas regression tests..."
+  npm run test:daas
   if [ $? -ne 0 ]; then
-    echo "❌ Browser smoke check failed."
+    echo "Daas regression tests failed."
     exit 1
   fi
 fi

@@ -38,11 +38,10 @@ import ignore from "ignore";
 import { minimatch } from "minimatch";
 import { gt, maxSatisfying, rcompare, satisfies, valid, validRange } from "semver";
 import { CONFIG_DIR_NAME } from "../config.ts";
-import { spawnProcess, spawnProcessSync } from "../utils/child-process.ts";
+import { spawnProcessSync } from "../utils/child-process.ts";
 import { type GitSource, parseGitUrl } from "../utils/git.ts";
 import { canonicalizePath, isLocalPath, markPathIgnoredByCloudSync, resolvePath } from "../utils/paths.ts";
 import { stripBom } from "../utils/text.ts";
-import { isStdoutTakenOver } from "./output-guard.ts";
 import { type PiManifest, readPiManifest } from "./pi-manifest.ts";
 import type { PackageSource, SettingsManager } from "./settings-manager.ts";
 
@@ -51,9 +50,7 @@ const UPDATE_CHECK_CONCURRENCY = 4;
 const GIT_UPDATE_CONCURRENCY = 4;
 
 function isOfflineModeEnabled(): boolean {
-	const value = process.env.PI_OFFLINE;
-	if (!value) return false;
-	return value === "1" || value.toLowerCase() === "true" || value.toLowerCase() === "yes";
+	return true;
 }
 
 function isExactNpmVersion(version: string | undefined): boolean {
@@ -1004,25 +1001,14 @@ export class DefaultPackageManager implements PackageManager {
 
 	async install(source: string, options?: { local?: boolean }): Promise<void> {
 		const parsed = this.parseSource(source);
+		if (parsed.type !== "local") throw new Error("Daas accepts local package paths only.");
 		const scope: SourceScope = options?.local ? "project" : "user";
 		this.assertProjectTrustedForScope(scope);
 		await this.withProgress("install", source, `Installing ${source}...`, async () => {
-			if (parsed.type === "npm") {
-				await this.installNpm(parsed, scope, false);
-				return;
+			const resolved = this.resolvePath(parsed.path);
+			if (!existsSync(resolved)) {
+				throw new Error(`Path does not exist: ${resolved}`);
 			}
-			if (parsed.type === "git") {
-				await this.installGit(parsed, scope);
-				return;
-			}
-			if (parsed.type === "local") {
-				const resolved = this.resolvePath(parsed.path);
-				if (!existsSync(resolved)) {
-					throw new Error(`Path does not exist: ${resolved}`);
-				}
-				return;
-			}
-			throw new Error(`Unsupported install source: ${source}`);
 		});
 	}
 
@@ -2601,27 +2587,16 @@ export class DefaultPackageManager implements PackageManager {
 		};
 	}
 
-	private spawnCommand(command: string, args: string[], options?: { cwd?: string }): ChildProcess {
-		const env = getEnv();
-		return spawnProcess(command, args, {
-			cwd: options?.cwd,
-			stdio: isStdoutTakenOver() ? ["ignore", 2, 2] : "inherit",
-			env,
-		});
+	private spawnCommand(_command: string, _args: string[], _options?: { cwd?: string }): ChildProcess {
+		throw new Error("Daas does not install or update packages. Provision dependencies and extensions locally.");
 	}
 
 	private spawnCaptureCommand(
-		command: string,
-		args: string[],
-		options?: { cwd?: string; env?: Record<string, string> },
+		_command: string,
+		_args: string[],
+		_options?: { cwd?: string; env?: Record<string, string> },
 	): ChildProcessByStdio<null, Readable, Readable> {
-		const baseEnv = getEnv();
-		const env = options?.env ? { ...baseEnv, ...options.env } : baseEnv;
-		return spawnProcess(command, args, {
-			cwd: options?.cwd,
-			stdio: ["ignore", "pipe", "pipe"],
-			env,
-		});
+		throw new Error("Daas disables remote package queries.");
 	}
 
 	private runCommandCapture(

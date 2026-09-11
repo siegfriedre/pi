@@ -1,3 +1,5 @@
+> 本分支为 **Daas 公司定制版**，请先阅读 [DAAS.md](DAAS.md)。下面保留上游介绍，其中发布、联网与安装说明不适用于本分支。
+
 <p align="center">
   <a href="https://pi.dev">
     <img alt="pi logo" src="https://pi.dev/logo-auto.svg" width="128">

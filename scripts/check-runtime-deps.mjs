@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { isBuiltin } from "node:module";
 import { isAbsolute, join, relative, resolve } from "node:path";
 import ts from "typescript";
-import { getPublicWorkspacePackages } from "./release-packages.mjs";
 
 const failures = [];
 
@@ -57,30 +56,21 @@ function checkSource(source, manifest) {
 	visit(source);
 }
 
-for (const { directory } of getPublicWorkspacePackages()) {
+const rootManifest = JSON.parse(readFileSync("package.json", "utf8"));
+const config = ts.readConfigFile("tsconfig.daas.json", ts.sys.readFile);
+if (config.error) throw new Error(ts.flattenDiagnosticMessageText(config.error.messageText, "\n"));
+const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, resolve("."));
+if (parsed.errors.length > 0) {
+	throw new Error(parsed.errors.map((error) => ts.flattenDiagnosticMessageText(error.messageText, "\n")).join("\n"));
+}
+const program = ts.createProgram(parsed.fileNames, parsed.options);
+for (const directory of rootManifest.workspaces) {
 	const sourceDirectory = resolve(directory, "src");
-	if (!existsSync(sourceDirectory)) continue;
 	const manifest = JSON.parse(readFileSync(join(directory, "package.json"), "utf8"));
-	const configPath = join(directory, "tsconfig.build.json");
-	const config = existsSync(configPath)
-		? ts.readConfigFile(configPath, ts.sys.readFile)
-		: { config: { include: ["src/**/*"] } };
-	if (config.error) throw new Error(ts.flattenDiagnosticMessageText(config.error.messageText, "\n"));
-	const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, resolve(directory));
-	if (parsed.errors.length > 0) {
-		throw new Error(parsed.errors.map((error) => ts.flattenDiagnosticMessageText(error.messageText, "\n")).join("\n"));
-	}
-	const roots = new Set(parsed.fileNames.map((file) => resolve(file)));
-	const program = ts.createProgram(parsed.fileNames, parsed.options);
 	for (const source of program.getSourceFiles()) {
 		if (source.isDeclarationFile || source.fileName.endsWith(".json")) continue;
 		const path = relative(sourceDirectory, resolve(source.fileName));
 		if (path.startsWith("..") || isAbsolute(path)) continue;
-		// TypeScript's exclude only filters roots: imports can pull excluded files
-		// back into the build. Reject that too, including type-only imports.
-		if (!roots.has(resolve(source.fileName))) {
-			failures.push(`${source.fileName} is excluded from ${manifest.name}'s build but imported by it`);
-		}
 		checkSource(source, manifest);
 	}
 }

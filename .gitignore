@@ -43,3 +43,13 @@ plans/
 .pi/hf-sessions-backup/
 collect.sh
 packages/agent/docs/extensions/pi-server-artifact/index.md
+
+# Daas credentials and runtime state (portable config templates are tracked)
+.config/agent/auth.json
+.config/agent/models-store.json
+.config/agent/sessions/
+.config/agent/bin/
+.config/agent/cache/
+.config/agent/trust.json
+.config/agent/*.lock
+.config/agent/settings.json.*

@@ -433,6 +433,9 @@ export function composeModelProvider(
 	extension: ProviderConfigInput | undefined,
 ): Provider {
 	const config = modelConfig.getProvider(providerId);
+	if (config?.oauth || extension?.oauth || base?.auth.oauth) {
+		throw new Error("Daas supports API-key authentication only; OAuth providers were removed.");
+	}
 	let extensionOAuthCredential: OAuthCredentials | undefined;
 	let refreshedExtensionModels: ProviderConfigInput["models"];
 	const currentExtension = (): ProviderConfigInput | undefined =>
