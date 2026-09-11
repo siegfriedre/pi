@@ -6,5 +6,12 @@
 	"enableInstallTelemetry": false,
 	"markdown": {
 		"mermaid": "off"
-	}
+	},
+	"defaultTools": [
+		"read",
+		"powershell",
+		"edit",
+		"write",
+		"ls"
+	]
 }

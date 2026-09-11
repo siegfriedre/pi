@@ -18,6 +18,8 @@ $env:DEEPSEEK_API_KEY = "你的密钥"
 
 首次安装仍需 npm 或公司镜像。离线交付应在目标操作系统和架构上准备依赖，保留锁文件解析的完整依赖树；不要复用旧版手工裁剪的 `node_modules`。Windows 尤其需要 `tsx`、`esbuild`、对应的 `@esbuild/win32-x64` 和图片处理依赖。
 
+默认工具为 `read`、`powershell`、`edit`、`write`、`ls`，由 `.config/agent/settings.json` 的 `defaultTools` 指定。命令执行使用 PowerShell；请确保 Windows PowerShell 或 PowerShell 7 可用。
+
 ## 配置位置
 
 配置目录优先级：
@@ -35,6 +37,8 @@ $env:DEEPSEEK_API_KEY = "你的密钥"
 密钥不要写入仓库。凭据、会话、缓存和工具二进制已加入忽略规则。设置文件会被应用修改，提交前请检查差异。
 
 ## 网络和依赖调整
+
+公司镜像可用版本固定为：`chalk 5.6.2`、`ignore 7.0.5`、`marked 18.0.5`、`undici 8.5.0`、`esbuild 0.28.1`、`typebox 1.3.27`。工作区声明使用精确版本，根目录 `overrides` 同时限制传递依赖，锁文件一并提交。后续同步上游时保留这六个版本，除非明确决定调整；Windows 的 `@esbuild/win32-x64` 必须与 `esbuild` 同为 `0.28.1`。
 
 - 移除 Anthropic、Google、Bedrock 等 SDK 依赖及 API 实现、云端 OAuth 实现和内置模型 provider，只保留 OpenAI SDK 作为模型传输。
 - 关闭远程模型目录、版本查询、自更新、安装统计、会话上传、工具自动下载，以及 npm/git 插件在线安装更新。设置 `PI_OFFLINE=0` 或刷新时传 `allowNetwork: true` 也不会恢复这些内置请求。
