@@ -1,4 +1,7 @@
 $ErrorActionPreference = "Stop"
+
+$scriptDir = $PSScriptRoot
+$env:PI_PACKAGE_DIR = Join-Path $scriptDir "packages\coding-agent"
 $forwardArgs = New-Object System.Collections.Generic.List[string]
 foreach ($arg in $args) {
     if ($arg -eq "--no-env") {

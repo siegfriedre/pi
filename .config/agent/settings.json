@@ -1,17 +1,19 @@
 {
-	"defaultProvider": "deepseek",
-	"defaultModel": "deepseek-flash",
-	"defaultThinkingLevel": "high",
-	"quietStartup": true,
-	"enableInstallTelemetry": false,
-	"markdown": {
-		"mermaid": "off"
-	},
-	"defaultTools": [
-		"read",
-		"powershell",
-		"edit",
-		"write",
-		"ls"
-	]
+  "defaultProvider": "deepseek",
+  "defaultModel": "deepseek-flash",
+  "defaultThinkingLevel": "high",
+  "quietStartup": true,
+  "enableInstallTelemetry": false,
+  "markdown": {
+    "mermaid": "off"
+  },
+  "defaultTools": [
+    "read",
+    "powershell",
+    "edit",
+    "write",
+    "ls"
+  ],
+  "lastChangelogVersion": "0.85.1",
+  "theme": "dark"
 }
