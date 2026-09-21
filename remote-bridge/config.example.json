@@ -1,0 +1,28 @@
+{
+	"inbox": {
+		"url": "http://127.0.0.1:8765/inbox",
+		"query": {
+			"key": "pi:inbox"
+		},
+		"headers": {},
+		"messages_path": "messages",
+		"poll_seconds": 10,
+		"timeout_seconds": 10,
+		"startup_policy": "skip"
+	},
+	"pi": {
+		"repo_dir": "..",
+		"cwd": "..",
+		"agent_dir": "../.config/agent",
+		"session_dir": ".local/sessions",
+		"resume": true,
+		"startup_timeout_seconds": 30,
+		"ui_timeout_seconds": 300
+	},
+	"notification": {
+		"url": null,
+		"headers": {},
+		"timeout_seconds": 10,
+		"jsonl_path": null
+	}
+}
