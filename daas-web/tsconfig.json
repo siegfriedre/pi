@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "lib": ["ES2022", "DOM"],
+    "paths": {
+      "@earendil-works/pi-ai": ["../packages/ai/src/index.ts"],
+      "@earendil-works/pi-ai/*": ["../packages/ai/src/*"],
+      "@earendil-works/pi-telemetry": ["../packages/telemetry/src/index.ts"]
+    }
+  },
+  "include": ["server/**/*.ts", ".daas/**/*.ts", "test/*.test.ts"],
+  "exclude": ["server/adapters/framework-entry.ts", "runtime-data", "dist"]
+}

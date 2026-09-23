@@ -1,0 +1,16 @@
+{
+  "name": "daas-agent-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "DaaS 业务开发与数据分析工作台",
+  "engines": { "node": ">=22.19.0" },
+  "scripts": {
+    "start": "tsx --tsconfig tsconfig.json server/main.ts",
+    "demo": "tsx --tsconfig tsconfig.json server/main.ts --demo",
+    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "check": "tsc --noEmit -p tsconfig.json",
+    "build:framework": "node build.mjs",
+    "check:upstream": "tsx --tsconfig tsconfig.json test/upstream-contract.ts"
+  }
+}

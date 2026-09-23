@@ -1,0 +1,10 @@
+node_modules/
+runtime-data/
+.daas/settings.json
+.daas/*.local.*
+.env
+.env.*
+!.env.example
+server/adapters/framework.bundle.mjs
+server/adapters/framework.bundle.mjs.map
+dist/

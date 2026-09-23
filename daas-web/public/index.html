@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light"><title>DaaS Agent · 业务工作台</title>
+  <link rel="icon" href="/favicon.svg"><link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <div id="shade" hidden></div>
+  <aside id="sidebar">
+    <a class="brand" href="/" aria-label="DaaS Agent 首页"><span class="brand-mark">D</span><span>DaaS <em>Agent</em></span></a>
+    <button id="new-chat" class="new-chat"><span class="plus">＋</span> 新建对话 <span class="shortcut">↗</span></button>
+    <label class="search"><span aria-hidden="true">⌕</span><input id="search" placeholder="搜索对话" aria-label="搜索历史对话"></label>
+    <label class="section-label" for="space">业务空间</label><select id="space" aria-label="业务空间"></select>
+    <div class="section-label recent-label">最近对话 <span id="history-count">0</span></div>
+    <nav id="history" aria-label="对话历史"><p class="muted">开始一个问题，对话会保存在这里。</p></nav>
+    <footer class="profile"><span class="avatar" id="avatar">D</span><div><strong id="user-name">正在连接</strong><small id="profile-note">DaaS 业务工作台</small></div><span class="online"></span></footer>
+  </aside>
+  <main>
+    <header class="topbar"><div class="top-left"><button id="toggle-sidebar" class="icon-button" aria-label="切换侧边栏">☰</button><strong>DaaS Agent</strong><span class="chevron">⌄</span><span id="environment" class="badge" hidden>演示环境</span></div>
+      <div id="mode-switch" class="segmented" role="group" aria-label="工作模式"><button data-mode="developer">API 开发</button><button data-mode="analyst" class="selected">数据分析</button></div>
+    </header>
+    <nav class="tabs" aria-label="内容视图"><button data-tab="chat" class="active">对话</button><button data-tab="work">工作台 <span id="artifact-count">0</span></button></nav>
+    <section id="chat-panel">
+      <div id="welcome"><div class="spark" aria-hidden="true">✳</div><p class="eyebrow">你的业务，从一个问题开始</p><h1 id="welcome-title">今天想了解哪些数据？</h1><p class="welcome-sub" id="welcome-sub">从查找 API 到分析结果，让 DaaS 帮你完成下一步。</p>
+        <div class="suggestions" id="suggestions"></div><p class="safety-note"><span>▣</span> 仅使用管理员提供的能力，在你的权限范围内工作</p>
+      </div>
+      <div id="messages" aria-live="polite" aria-label="对话内容"></div>
+      <div id="running" hidden><span class="spinner"></span><span id="running-label">DaaS 正在处理任务…</span></div>
+    </section>
+    <section id="work-panel" hidden><div class="work-heading"><div><p class="eyebrow">DAAS WORKSPACE</p><h1>让结果，看得见</h1></div><span class="pill">数据 · 图表 · 报告</span></div><div id="approvals"></div><div id="artifacts"></div><div id="results"></div><div id="empty-work" class="empty-state"><span>▤</span><h2>成果会出现在这里</h2><p>查询结果、操作确认和生成的报告，都会保留在当前对话的工作台。</p></div></section>
+    <div class="composer-wrap"><form id="composer"><textarea id="prompt" rows="2" maxlength="12000" placeholder="向 DaaS 描述你的任务…" aria-label="发送消息"></textarea><div class="composer-bottom"><span id="mode-note">数据分析 · 受控工具</span><button id="send" type="submit" aria-label="发送消息">↑</button><button id="stop" type="button" aria-label="停止任务" hidden>■</button></div></form><p id="footnote">DaaS 在授权范围内执行任务，重要操作需要你的确认。</p></div>
+  </main>
+  <div id="toast" role="alert" hidden></div>
+</body>
+</html>
