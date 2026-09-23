@@ -1,117 +1,67 @@
-> 本分支为 **Daas 公司定制版**，请先阅读 [DAAS.md](DAAS.md)。下面保留上游介绍，其中发布、联网与安装说明不适用于本分支。
+# DaaS Agent Web
 
-<p align="center">
-  <a href="https://pi.dev">
-    <img alt="pi logo" src="https://pi.dev/logo-auto.svg" width="128">
-  </a>
-</p>
-<p align="center">
-  <a href="https://discord.com/invite/3cU7Bz4UPx"><img alt="Discord" src="https://img.shields.io/badge/discord-community-5865F2?style=flat-square&logo=discord&logoColor=white" /></a>
-  <a href="https://www.npmjs.com/package/@earendil-works/pi-coding-agent"><img alt="npm" src="https://img.shields.io/npm/v/@earendil-works/pi-coding-agent?style=flat-square" /></a>
-</p>
+本分支专用于 DaaS 网页业务 Agent，不再作为终端助手的完整 monorepo。
 
-> New issues and PRs from new contributors are auto-closed by default. Maintainers review auto-closed issues daily. See [CONTRIBUTING.md](CONTRIBUTING.md).
+## 两种运行方式
 
-# Pi Agent Harness
+**推荐部署发布目录**：在有固定依赖的构建机器上执行 `npm run build`。构建完成后只把 `daas-web/dist/` 的内容放入容器。运行容器需要 Node.js >=22.19.0、私有配置/环境变量和一个可写数据目录；不需要 `packages/`、`node_modules`、tsx、esbuild、tsgo、Python、Redis 或终端工具。构建会执行隔离检查，失败不会替换原发布目录。
 
-This is the home of the Pi agent harness project including our self extensible coding agent.
+**源码开发**：仓库保留 `daas-web/`、`packages/agent`、`packages/ai`、`packages/telemetry`，根目录只安装应用需要的依赖。运行时用 `tsx` 的路径映射直接引用三份源码，不逐包构建。
 
-* **[@earendil-works/pi-coding-agent](packages/coding-agent)**: Interactive coding agent CLI
-* **[@earendil-works/pi-agent-core](packages/agent)**: Agent runtime with tool calling and state management
-* **[@earendil-works/pi-ai](packages/ai)**: Unified multi-provider LLM API (OpenAI, Anthropic, Google, …)
-
-To learn more about Pi:
-
-* [Visit pi.dev](https://pi.dev), the project website with demos
-* [Read the documentation](https://pi.dev/docs/latest), but you can also ask the agent to explain itself
-
-## All Packages
-
-| Package | Description |
-|---------|-------------|
-| **[@earendil-works/chord](packages/chord)** | Standalone application-composition runtime for services, replicated state, RPC, and plugins |
-| **[@earendil-works/pi-telemetry](packages/telemetry)** | Vendor-neutral telemetry contracts, reference adapter, conformance tests, and typed schemas |
-| **[@earendil-works/pi-ai](packages/ai)** | Unified multi-provider LLM API (OpenAI, Anthropic, Google, etc.) |
-| **[@earendil-works/pi-agent-core](packages/agent)** | Agent runtime with tool calling and state management |
-| **[@earendil-works/pi-coding-agent](packages/coding-agent)** | Interactive coding agent CLI |
-| **[@earendil-works/pi-tui](packages/tui)** | Terminal UI library with differential rendering |
-
-For Slack/chat automation and workflows see [earendil-works/pi-chat](https://github.com/earendil-works/pi-chat).
-
-## Permissions & Containerization
-
-Pi does not include a built-in permission system for restricting filesystem, process, network, or credential access. By default, it runs with the permissions of the user and process that launched it.
-
-If you need stronger boundaries, containerize or sandbox Pi. See [packages/coding-agent/docs/containerization.md](packages/coding-agent/docs/containerization.md) for three patterns:
-
-- **Gondolin extension**: keep `pi` and provider auth on the host while routing built-in tools and `!` commands into a local Linux micro-VM.
-- **Plain Docker**: run the whole `pi` process in a local container for simple isolation.
-- **OpenShell**: run the whole `pi` process in a policy-controlled sandbox.
-
-## Contributing
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidelines and [AGENTS.md](AGENTS.md) for project-specific rules (for both humans and agents).  Longer term plans for Pi can also be found in [RFCs](https://rfc.earendil.com/keyword/pi/).
-
-## Development
-
-```bash
-npm install --ignore-scripts  # Install all dependencies without running lifecycle scripts
-npm run build         # Refresh model data, then build all packages
-npm run build:offline # Rebuild using existing model data without network access
-npm run check         # Lint, format, and type check
-./test.sh            # Run tests (skips LLM-dependent tests without API keys)
-./pi-test.sh         # Run pi from sources (can be run from any directory)
+```sh
+# 在仓库根目录，使用公司已有的 npm 缓存/内网镜像，不升级版本。
+npm ci --ignore-scripts --offline
+npm run check
+npm test
+npm run check:upstream
+npm run build
 ```
 
-## Building standalone binaries from release source
+`--offline` 需要相应 tarball 已经在 npm 缓存中；缓存不完整时，应先从公司批准的镜像准备同版本包，不要改版本碰碰运气。不要使用 `--omit=optional`，构建环境的 esbuild 需要匹配平台的二进制。`npm ci` 会重建 node_modules，先保管手动放进去、未登记的依赖。
 
-GitHub releases include a versioned source archive covered by the release's `SHA256SUMS` file. Extract it and run the same build script used for the official standalone binaries:
+初次只看网页和演示流程，不需要 npm 安装：
 
-```bash
-VERSION="<release-version>"
-tar -xzf "pi-${VERSION}-source.tar.gz"
-cd "pi-${VERSION}"
-./scripts/build-binaries.sh --offline-model-data --platform linux-x64 --out "$PWD/out"
+```sh
+npm run demo
 ```
 
-The archive includes release model data and native prebuilds. `--offline-model-data` uses that model data without refreshing provider catalogs. The script installs dependencies and builds the executable with its runtime assets; pass `--skip-install` if dependencies are already provided.
+演示模式只在本机启动，使用固定流程与虚构数据，不调用模型或真实平台。源码正式模式先按 `daas-web/README.md` 配置，再执行 `npm start`。
 
-## Supply-chain hardening
+## packages 为什么只保留三个
 
-We treat npm dependency changes as reviewed code changes.
+| 目录 | 保留原因 |
+| --- | --- |
+| `packages/agent` | 当前适配器使用的 Agent 循环、工具调用和消息事件 |
+| `packages/ai` | 模型协议、流响应处理和参数校验 |
+| `packages/telemetry` | 模型层引用的观测接口和公共类型；不能仅因未启用外部监控就直接删掉 |
 
-- Direct external dependencies are pinned to exact versions. Internal workspace packages remain version-ranged.
-- `.npmrc` sets `save-exact=true` and `min-release-age=2` to avoid same-day dependency releases during npm resolution.
-- `package-lock.json` is the dependency ground truth. Pre-commit blocks accidental lockfile commits unless `PI_ALLOW_LOCKFILE_CHANGE=1` is set.
-- `npm run check` verifies pinned direct deps, native TypeScript import compatibility, and the generated coding-agent shrinkwrap.
-- The published CLI package includes `packages/coding-agent/npm-shrinkwrap.json`, generated from the root lockfile, to pin transitive deps for npm users.
-- Release smoke tests use `npm run release:local` to build, pack, and create isolated npm and Bun installs outside the repo before tagging a release.
-- Local release installs, documented npm installs, and `pi update --self` use `--ignore-scripts` where supported.
-- CI installs with `npm ci --ignore-scripts`, and a scheduled GitHub workflow runs `npm audit --omit=dev` plus `npm audit signatures --omit=dev`.
-- Shrinkwrap generation has an explicit allowlist for dependency lifecycle scripts; new lifecycle-script deps fail checks until reviewed.
+三份目录是未修改的上游源码快照，**不再声明为 npm workspaces**。其 package.json 中保留的完整上游依赖/导出，仅描述完整上游包，不代表本应用必须安装那些依赖。本应用只支持 `daas-web/server/adapters/framework-entry.ts` 引入的入口，不保证每个上游公开入口都可独立使用；例如完整 Harness 仍可能需要已移除的 chord。恢复其他入口时必须同时检查依赖，不能随意改回包根导入。
 
-## Share your OSS coding agent sessions
+已从这个专用工作树移除的包为：
+`chord`、`client`、`coding-agent`、`evals`、`protocol`、`server`、`session-backends`、`tui`。
 
-If you use Pi or other coding agents for open source work, please share your sessions.
+旧终端配置、启动脚本、远程桥接和不适用的工作流/测试入口也移除。Git 历史和 `company-deepseek` 不受影响；需要恢复时按 `daas-web/UPGRADE.md` 操作。
 
-Public OSS session data helps improve coding agents with real-world tasks, tool use, failures, and fixes instead of toy benchmarks.
+## 固定依赖
 
-For the full explanation, see [this post on X](https://x.com/badlogicgames/status/2037811643774652911).
+源码/构建机器的直接运行依赖：`openai 6.40.0`、`partial-json 0.1.7`、`typebox 1.3.27`。
 
-To publish sessions, use [`badlogic/pi-share-hf`](https://github.com/badlogic/pi-share-hf). Read its README.md for setup instructions. All you need is a Hugging Face account, the Hugging Face CLI, and `pi-share-hf`.
+开发与构建依赖：`tsx 4.22.1`、`esbuild 0.28.1`、`typescript 5.9.3`、`@types/node 22.19.19`。没有新增版本；锁文件只保留它们的依赖闭包，沿用已有 tarball URL 和 integrity。旧固定版本仍保留在 overrides 作为后续恢复时的约束，但不会触发安装无用依赖。
 
-You can also watch [this video](https://x.com/badlogicgames/status/2041151967695634619), where I show how I publish my `pi-mono` sessions.
+锁文件含所有 esbuild 平台的可选记录，不表示 Linux 会安装所有平台二进制。`undici-types` 是 Node 类型声明依赖，不是之前的 `undici` 运行包。
 
-I regularly publish my own `pi-mono` work sessions here:
+## 部署
 
-- [badlogicgames/pi-mono on Hugging Face](https://huggingface.co/datasets/badlogicgames/pi-mono)
+构建成功后，`dist/` 包含 DaaS 服务、前端、`.daas` 能力资源、内部框架 bundle、许可证和构建信息。源配置文件和运行数据不会进入发布目录。
 
-## License
+```sh
+# 上传 dist 的内容到 /opt/daas，并挂载私有配置和 /var/lib/daas。
+cd /opt/daas
+DAAS_DATA_DIR=/var/lib/daas node server/main.ts
+```
 
-MIT
+正式模式仍需要模型网关地址/密钥、DaaS 接口映射、受信任登录网关签名。打包不会自动解决公司的网络、证书、SSO 或业务接口协议。使用只读、非 root 容器；必要出站网络限于模型和业务 API。
 
-<p align="center">
-  <a href="https://pi.dev">pi.dev</a> domain graciously donated by
-  <br /><br />
-  <a href="https://exe.dev"><img src="packages/coding-agent/docs/images/exy.png" alt="Exy mascot" width="48" /><br />exe.dev</a>
-</p>
+`npm run build` 会把发布目录复制到仓库外的临时目录，使用真实打包核心和本地模拟模型 HTTP 服务验证工具调用；不调用公司的模型或 API。也可单独执行 `npm run check:release`。这个检查验证发布依赖闭包，不等于公司业务联调。
+
+详细功能和限制见 `daas-web/README.md`；升级、恢复包和维护边界见 `daas-web/UPGRADE.md`。

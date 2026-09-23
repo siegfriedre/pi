@@ -1,0 +1,13 @@
+{
+  "baseBranch": "company-deepseek",
+  "baseCommit": "5d9f6422c177a40a68294113166bede4cf12d22f",
+  "applicationBaseCommit": "8ec81d605bcc9943dbc4da4275c076bc51c68174",
+  "version": "0.85.1",
+  "mode": "source-snapshots-not-npm-workspaces",
+  "trees": {
+    "packages/agent": "a8994d39a6f9b2344aca3f028442efce50887955",
+    "packages/ai": "6c76efd8733f9799e579791989e978959e2535fc",
+    "packages/telemetry": "b6ee73edfd0c25cb3a708f9c0888276889745d93"
+  },
+  "supportedEntry": "daas-web/server/adapters/framework-entry.ts"
+}

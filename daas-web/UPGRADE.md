@@ -1,48 +1,62 @@
-# DaaS 升级与维护边界
+# DaaS 升级与维护
 
-## 基线
+## 当前结构
 
-本应用建立在 `company-deepseek` 的提交 `5d9f6422c177a40a68294113166bede4cf12d22f` 上。该基线核心包版本为 0.85.1。
+本分支已从完整终端工程收敛为网页专用工程。三份保留核心为 `packages/agent`、`packages/ai`、`packages/telemetry`，以原样源码快照保存；确切基线与目录 Git tree SHA 记录在根目录 `UPSTREAM.json`。
 
-本次仅新增 `daas-web/`，不修改核心包、既有远程桥接、根目录启动脚本、原模型配置、依赖固定项或锁文件。现有终端产品继续独立存在，但不作为此网页应用的运行入口。
+根 package.json **没有 workspaces**。第三方依赖由根目录的精简声明和锁文件管理，不执行上游目录各自的 install/build/test 脚本。源码启动与 esbuild 通过 `daas-web/tsconfig.json` 指向必要源文件。因此不需要先为每个上游包构建 dist，也不需要 tsgo。
 
-## 你日常会修改的地方
+这是“复用有限源码入口”，不是“保证完整上游包的所有导出都可运行”。保留目录内的旧 package.json、测试和文档是快照的一部分，可能引用被裁掉的完整框架功能。它们不参与本应用安装，也不被复制进运行容器。
 
-| 需求 | 文件/目录 |
-| --- | --- |
-| 页面布局、主题、交互 | `public/` |
-| 增加业务工具 | `.daas/extensions/`，并在 `.daas/index.ts` 显式导入注册 |
-| 增加业务技能和资料 | `.daas/skills/`，登记资源 ID 与必要工具依赖 |
-| 适配实际 DaaS 接口 | `server/adapters/platform.ts` 与私有 settings.json |
-| 适配公司 SSO | `server/safety.ts` 的 authenticate，或独立替换为公司验证器 |
-| 切换模型网关 | 服务器环境变量和 modelCompat |
-| 更换数据库存储 | `server/store.ts`，保持会话归属与执行意图约束 |
+## 日常改动
 
-所有新增目录均使用 `.daas`，不创建旧框架的用户配置目录。不能简单全仓库替换上游 npm 包名；这样会破坏导入、锁文件和后续合并。上游真实包名只保留于私有适配器/构建映射/许可证等必要位置，不进入网页工具目录、产品身份或通用文件读取范围。许可证和原始归属不应为了品牌替换而删除。
+- 页面与交互：`daas-web/public/`。
+- 业务工具：`daas-web/.daas/extensions/`，由 `.daas/index.ts` 显式注册。
+- Skills/参考资料：`.daas/skills/`，按批准的资源 ID 注册。
+- 平台接口与登录协议：`server/adapters/platform.ts`、`server/safety.ts`。
+- 核心 ABI 适配：`server/adapters/framework-entry.ts` 和 `model.ts`。
 
-## 升级时只检查一个薄适配层
+业务插件不直接导入上游 SDK。不要为了一项业务功能重新引入完整 CLI/TUI 或把 npm workspaces 改回通配符。
 
-`server/adapters/framework-entry.ts` 引入 `Agent` 及 OpenAI-compatible streamSimple，`model.ts` 负责把 DaaS 运行契约映射到它们。没有引用 Coding Agent CLI/TUI、默认工具、终端会话层、项目资源发现器或动态扩展安装器。
+## 升级三份核心源码
 
-建议在单独的升级分支更新核心，保留公司模型接入和固定依赖策略，然后依次运行：
+先在升级分支操作。当前的 `company-deepseek` 是保留完整项目的来源。应固定一个你审核过的来源提交，而不是不加检查地使用远程分支最新头。
 
 ```sh
-npm --prefix daas-web test
-npm --prefix daas-web run check
-npm --prefix daas-web run check:upstream
-npm --prefix daas-web run build:framework
+git fetch origin
+git switch -c upgrade/daas-core
+# 将下面来源替换为本次审核过的实际提交或引用：
+git restore --source origin/company-deepseek -- packages/agent packages/ai packages/telemetry
 ```
 
-应用级 check 不遍历上游源码入口，真实 API 变化由 check:upstream 和打包检测。check:upstream 会使用实际 Agent 和本地假模型流，验证构造、Schema 校验、工具执行、工具结果进入下一轮；不会调用公司模型。
+同步审查模型适配代码、上游依赖变化、许可证以及路径别名；更新 `UPSTREAM.json` 的来源与三份 tree SHA。固定依赖不要自动升级，内网缺少新依赖时先评估兼容方案。
 
-重点核对 Agent 构造参数、streamSimple 参数/事件、工具 execute 签名、消息和结果格式、取消与顺序执行。优先修适配器，不为了保留终端细节重新引入整个终端包。即使 Schema 合约测试通过，仍需用当前业务模型测试能力发现、参数正确率、业务确认、权限和错误处理。
+```sh
+npm run check
+npm test
+npm run check:upstream
+npm run build
+```
 
-依赖版本当前沿用分支已固定项：tsx 4.22.1、esbuild 0.28.1、typescript 5.9.3、typebox 1.3.27；chalk 5.6.2、ignore 7.0.5、marked 18.0.5、undici 8.5.0 等根覆盖项也没有改动。网页自身未增加运行依赖。安装依赖必须对应 Linux/目标 CPU 架构，不能直接搬运 Windows 上的原生二进制缓存。
+应用检查不遍历完整上游包；真实 ABI 与 bundle 的依赖检查由后两步负责。构建过程遇到未保留的核心目录、未打包的第三方依赖或隔离运行失败会报错，而不是悄悄把整个 monorepo 又带回来。
 
-## 能力版本与发布
+## 恢复一个已删除的包
 
-修改工具语义或参数时递增工具 version；生产代码和 Skills 通过管理员构建发布，第一版不热加载。不要把运行期下载、用户附件、生成报告目录作为模块搜索路径。部署代码目录只读，数据目录独立。
+例如需要原来的终端包：
 
-已经生成的确认记录绑定工具 ID、version、参数摘要与会话。工具版本不匹配或参数改变后拒绝执行；已在执行中但没有确定结果的操作在重启后标为 unknown，不能自动补做。管理员必须保证实现有变化时更新 version，不能仅依赖文件名不变。
+```sh
+git fetch origin
+git restore --source origin/company-deepseek -- packages/coding-agent
+```
 
-前端与插件面向 DaaS 自己的类型，后续核心升级不应要求它们随上游的 TUI 或扩展事件体系一起重写。
+这只恢复工作树中的文件，不会改变远程 company 分支。**复制包不等于自动可用**：还需检查该包依赖的 tui/chord 等目录、第三方固定版本、构建脚本和入口。网页运行主路径仍应保持精简；另建工具分支通常比污染生产入口更清楚。
+
+从 Git 历史恢复同版本文件也可以，已删除目录并未从历史中抹除。
+
+## 发布与运行
+
+`npm run build` 只更新 `daas-web/dist`，只使用已安装依赖，不在线安装。成功条件包括一个仓库外的隔离 smoke：真实 bundle、四个系统工具、一轮模型工具调用和下一轮回复。它使用本机假模型 HTTP 服务，不带公司凭据。
+
+运行容器只接收 `dist/` 内容。新增纯 TypeScript 业务工具或修改前端后重新构建；没有必要上传整个 packages。生产代码与 Skills 只读，数据目录独立可写。许可证保留于非公开的 licenses 目录，不做全仓库包名替换。
+
+已生成的写入确认绑定工具 ID、版本、参数和会话。工具语义或参数有变化时递增版本，不自动恢复状态未知的写入。

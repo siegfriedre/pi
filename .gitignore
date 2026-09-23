@@ -1,55 +1,11 @@
 node_modules/
-dist/
-.artifacts/
-*.log
-.DS_Store
-*.tsbuildinfo
-# packages/*/node_modules/
-packages/*/dist/
-packages/*/dist-chrome/
-packages/*/dist-firefox/
-packages/ai/src/providers/data/
-packages/ai/src/providers/.model-generation-*/
-*.cpuprofile
-
-# Environment
+**/dist/
+**/runtime-data/
+**/.dist-staging-*/
+daas-web/.daas/settings.json
+daas-web/.daas/*.local.*
 .env
-
-# Editor files
-.vscode/
-.zed/
-.idea/
-.claude/
-*.swp
-*.swo
-*~
-
-# Package specific
-.npm/
-coverage/
-.nyc_output/
-.pi_config/
-tui-debug.log
-compaction-results/
-.opencode/
-syntax.jsonl
-out.jsonl
-pi-*.html
-out.html
-packages/coding-agent/binaries/
-todo.md
-plans/
-.pi/hf-sessions/
-.pi/hf-sessions-backup/
-collect.sh
-packages/agent/docs/extensions/pi-server-artifact/index.md
-
-# Daas credentials and runtime state (portable config templates are tracked)
-.config/agent/auth.json
-.config/agent/models-store.json
-.config/agent/sessions/
-.config/agent/bin/
-.config/agent/cache/
-.config/agent/trust.json
-.config/agent/*.lock
-.config/agent/settings.json.*
+.env.*
+!.env.example
+*.tgz
+*.log

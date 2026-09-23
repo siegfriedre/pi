@@ -2,11 +2,13 @@
 
 DaaS 专用的网页开发与用数助手。一个前端、一个 Node.js 服务，两种工作模式；所有业务能力由管理员发布。网页、运行目录、身份回复和公开错误统一采用 **DaaS Agent** 品牌。
 
-本应用以 `company-deepseek` 的现有核心为基础，新增到 `daas-web/`，**不修改核心源码、根 package.json、锁文件或已固定的依赖版本**。真正的框架引用只在 `server/adapters/framework-entry.ts`；业务扩展不引用上游 SDK。
+本应用以 `company-deepseek` 的核心为基础。当前专用分支仅保留 `packages/agent`、`packages/ai`、`packages/telemetry` 三份未改写的源码快照；根 package.json 和锁文件已经改为网页应用的最小依赖集合，不再启用 npm workspaces。实际导入只经过 `server/adapters/framework-entry.ts`，业务扩展不引用上游 SDK。旧终端及无关包可从原分支恢复。
+
+推荐先阅读根目录 `README.md`：构建机器保留三份源码，运行容器只接收构建成功后的 `dist/` 内容。
 
 ## 先体验界面
 
-在已经准备好当前分支依赖的仓库根目录：
+在 Node >=22.19.0 的仓库根目录，演示启动无需 npm 安装：
 
 ```sh
 npm --prefix daas-web run demo
@@ -153,14 +155,14 @@ npm --prefix daas-web start
 
 ## Linux 容器与离线交付
 
-本地源码启动复用已固定的 `tsx 4.22.1`；构建脚本只接受原分支的 `esbuild 0.28.1`，不调用 tsgo，不安装或升级任何依赖。先在具备当前分支 Linux 依赖的构建环境运行：
+源码正式启动使用已固定的 `tsx 4.22.1`；构建脚本只接受 `esbuild 0.28.1`，不调用 tsgo、不在线安装或升级依赖。源码根目录安装七项直接依赖，版本沿用原锁文件。不要进入各 packages 目录安装；不要从 Windows 拷贝平台二进制用于 Linux 构建。先在准备好固定依赖的构建环境运行：
 
 ```sh
 npm --prefix daas-web run check:upstream
 npm --prefix daas-web run build:framework
 ```
 
-构建输出 `daas-web/dist/`：SDK 打包为私有 `framework.bundle.mjs`；复制 DaaS 服务、前端、已批准扩展与示例配置，并保留第三方许可证。不会复制本地 settings.json、运行数据、源码映射或旧终端目录。该运行目录使用 Node 类型擦除启动管理员 TS 源码，不需要安装 CLI/TUI 或 tsx。生产运行只读代码和单独可写数据卷，不意味着允许运行模型提交的代码。
+构建先检查依赖闭包，再将发布文件复制到仓库外、用本地模拟模型验证实际 bundle 的工具调用。全部通过后才替换原发布目录。构建输出 `daas-web/dist/`：SDK 打包为私有 `framework.bundle.mjs`；复制 DaaS 服务、前端、已批准扩展与示例配置，并保留第三方许可证。不会复制本地 settings.json、运行数据、源码映射或旧终端目录。该运行目录使用 Node 类型擦除启动管理员 TS 源码，不需要安装 CLI/TUI 或 tsx。生产运行只读代码和单独可写数据卷，不意味着允许运行模型提交的代码。
 
 Dockerfile 不固定一个未知的公司镜像，要求显式传入已批准、已缓存的 Linux Node >=22.19 基础镜像（建议使用 digest）：
 
@@ -178,8 +180,8 @@ docker build --build-arg BASE_IMAGE='你的内网Node镜像或digest' -t daas-ag
 
 长对话仅取最近 16 条消息并限制单条长度，不提供完整终端的自动压缩/分支能力。重要旧条件缺失时助手应再次确认；结果通过 resultId 复用。模型文本在完成一次消息后返回页面，工具状态通过轮询逐步出现，不是逐 Token 展示。展示层只清理助手叙述和生成的产品标题中的已知上游品牌，不篡改用户输入、SQL 或业务原始数据；身份问题“你是谁”有不依赖模型的确定性回复。提示词和品牌过滤不是对任意提示攻击的数学保证。
 
-本次实际验证：44 项 Node 离线测试通过；应用级 TypeScript 类型检查通过（容器中的 TypeScript 5.8.3）；桌面/手机布局、身份回复、查询报告、确认、历史搜索等 8 项 Chromium 检查通过。浏览器环境禁止 URL 导航，页面检查使用本地静态资源和 HTTP 测试桥接，报告在无脚本 iframe 中渲染；未修改浏览器策略。接口、Cookie/签名之外的正式网关行为仍需在公司浏览器环境联调。
+首版交付记录包含 44 项应用离线测试。此次依赖裁剪新增项目/锁文件与 bundle 边界测试，并提供构建后隔离验证脚本。变更包中的 `VALIDATION.json` 记录本次实际执行结果；不要把未执行的完整构建或公司联调视为已通过。
 
-当前执行环境没有原仓库的安装依赖，且不能下载，因此**未运行真实 SDK 契约测试、esbuild 0.28.1 完整打包、Docker 构建或公司模型/API 联调**。已提供 `check:upstream` 使用真实 Agent 核心与本地假模型流进行无网络回归；它和完整构建需在你的已配置工作区执行。根依赖与锁文件保持原样，未用容器中的工具版本替换它们。
+当前受限执行环境没有三份完整上游源码及固定 npm 依赖，不能运行真实 SDK 契约、完整打包、Docker 或公司模型/API 联调。请在准备好依赖的工作区执行 `npm run check:upstream` 和 `npm run build`。提示词和品牌过滤不是对任意提示攻击的数学保证。
 
 升级和维护请看 `UPGRADE.md`。
