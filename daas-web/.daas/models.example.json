@@ -1,0 +1,37 @@
+{
+  "providers": {
+    "deepseek": {
+      "baseUrl": "https://model.company.example/v1",
+      "api": "openai-completions",
+      "apiKey": "${DEEPSEEK_API_KEY}",
+      "authHeader": true,
+      "headers": {},
+      "compat": {
+        "thinkingFormat": "deepseek",
+        "maxTokensField": "max_tokens",
+        "supportsStore": false,
+        "supportsDeveloperRole": false
+      },
+      "models": [
+        {
+          "id": "deepseek-flash",
+          "name": "DaaS 业务模型",
+          "reasoning": true,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": "high",
+            "low": "high",
+            "medium": "high",
+            "high": "high",
+            "xhigh": "max",
+            "max": "max"
+          },
+          "input": ["text", "image"],
+          "contextWindow": 1000000,
+          "maxTokens": 32768,
+          "cost": {"input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0}
+        }
+      ]
+    }
+  }
+}

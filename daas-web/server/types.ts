@@ -1,3 +1,4 @@
+import type { ModelProfiles } from './models.ts';
 export type Mode = 'developer' | 'analyst';
 export type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 export type Args = Record<string, unknown>;
@@ -14,9 +15,8 @@ export interface Principal {
 }
 export interface Config {
   demo: boolean; host: string; port: number; origin: string; root: string; dataDir: string;
-  gatewaySecret: string; modelKey: string; modelBase: string; modelId: string;
-  modelHeaders: Record<string, string>; modelCompat: Record<string, unknown>;
-  modelContext: number; modelMaxTokens: number; maxTurns: number; taskTimeoutMs: number;
+  gatewaySecret: string; modelProfiles?: ModelProfiles; systemPrompts: Record<Mode, string>;
+  maxTurns: number; taskTimeoutMs: number;
   platformBase: string; operations: Record<string, string>; readApiIds: string[];
 }
 export interface Message { id: string; role: 'user' | 'assistant'; text: string; time: string }

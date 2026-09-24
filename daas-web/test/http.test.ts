@@ -35,7 +35,7 @@ async function setup(t: test.TestContext, live = false) {
 test('static page is DaaS branded and serves no configuration/source files', async t => {
   const { get } = await setup(t); const index = await get('/'); assert.equal(index.status, 200); const html = await index.text();
   assert.match(html, /DaaS Agent/); assert.ok(!/\bpi\b/i.test(html)); assert.ok(!html.includes('cdn.'));
-  for (const path of ['/.daas/settings.json', '/server/main.ts', '/package.json', '/.env']) assert.equal((await get(path)).status, 404);
+  for (const path of ['/.daas/settings.json', '/.daas/models.json', '/.daas/prompts/base.md', '/server/main.ts', '/package.json', '/.env']) assert.equal((await get(path)).status, 404);
 });
 test('security headers disallow inline main-page scripts and external connections', async t => {
   const { get } = await setup(t); const res = await get('/'); assert.match(res.headers.get('content-security-policy')!, /script-src 'self'/); assert.equal(res.headers.get('x-content-type-options'), 'nosniff'); assert.equal(res.headers.get('cache-control'), 'no-store');

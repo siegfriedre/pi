@@ -31,7 +31,7 @@ test('JSON validator rejects prototype keys and excessive nesting', () => {
   let value: unknown = 'x'; for (let i = 0; i < 14; i++) value = [value]; assert.throws(() => validateJson(value), AppError);
 });
 test('identity has fixed DaaS name', () => { assert.match(identityReply('你是谁？')!, /DaaS Agent/); assert.match(identityReply('Who are you?')!, /DaaS/); assert.equal(identityReply('帮我查询'), undefined); });
-test('product prose removes upstream branding and config directory', () => assert.equal(brand('I am pi coding agent; .pi/skills; @earendil-works/pi-agent-core'), 'I am DaaS; .daas/skills; DaaS Agent'));
+test('product identity normalization is limited to self-identification', () => { assert.equal(brand('I am pi coding agent.'), 'I am DaaS Agent.'); assert.equal(brand('我是 pi。'), '我是 DaaS Agent。'); });
 test('approved resource read supports only fixed in-root regular files', async t => {
   const { dir } = await setup(t); const root = join(dir, 'resources'); await mkdir(root); await writeFile(join(root, 'ok.md'), 'DaaS');
   assert.equal(await readApproved(root, 'ok.md'), 'DaaS');
@@ -110,7 +110,7 @@ test('restart marks interrupted writes unknown instead of retrying them', async 
 });
 test('model adapter only supplies four tools, serial execution, no raw reasoning, and branded output', async t => {
   const { config, session } = await setup(t); let options: any; let listener: any; const replies: string[] = [];
-  const fake: Framework = { Agent: class { constructor(o: any) { options = o; } subscribe(fn: any) { listener = fn; return () => {}; } abort() {} async prompt() { await listener({ type: 'message_end', message: { role: 'assistant', stopReason: 'stop', content: [{ type: 'thinking', thinking: 'private' }, { type: 'text', text: 'I am pi coding agent' }] } }); } }, streamSimple() {} };
+  const fake: Framework = { Agent: class { constructor(o: any) { options = o; } subscribe(fn: any) { listener = fn; return () => {}; } abort() {} async prompt() { await listener({ type: 'message_end', message: { role: 'assistant', stopReason: 'stop', content: [{ type: 'thinking', thinking: 'private' }, { type: 'text', text: 'I am pi coding agent' }] } }); } }, streamSimple() {}, getSupportedThinkingLevels: () => ['off'] };
   await runModel(config, { session, prompt: 'hello', signal: new AbortController().signal, definitions: SYSTEM_TOOLS, call: async () => ({}), reply: async text => { replies.push(text); } }, fake);
   assert.equal(options.toolExecution, 'sequential'); assert.deepEqual(options.initialState.tools.map((t: any) => t.name), SYSTEM_TOOLS.map(t => t.name)); assert.ok(!replies.join('').includes('private')); assert.ok(!replies.join('').includes('pi')); assert.ok(options.initialState.systemPrompt.includes('DaaS Agent'));
 });

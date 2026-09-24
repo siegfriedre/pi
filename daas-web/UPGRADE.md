@@ -12,6 +12,8 @@
 
 - 页面与交互：`daas-web/public/`。
 - 业务工具：`daas-web/.daas/extensions/`，由 `.daas/index.ts` 显式注册。
+- 模型目录和思考级别：`.daas/models.json`、`.daas/settings.json`（见 `MODELS.md`）。
+- 产品基础和模式提示词：`.daas/prompts/`。
 - Skills/参考资料：`.daas/skills/`，按批准的资源 ID 注册。
 - 平台接口与登录协议：`server/adapters/platform.ts`、`server/safety.ts`。
 - 核心 ABI 适配：`server/adapters/framework-entry.ts` 和 `model.ts`。
@@ -60,3 +62,11 @@ git restore --source origin/company-deepseek -- packages/coding-agent
 运行容器只接收 `dist/` 内容。新增纯 TypeScript 业务工具或修改前端后重新构建；没有必要上传整个 packages。生产代码与 Skills 只读，数据目录独立可写。许可证保留于非公开的 licenses 目录，不做全仓库包名替换。
 
 已生成的写入确认绑定工具 ID、版本、参数和会话。工具语义或参数有变化时递增版本，不自动恢复状态未知的写入。
+
+## 模型配置兼容检查
+
+AI 包仍负责真正的请求序列化；DaaS 仅负责已批准模型文件的解析、选择和凭据注入。升级时核对 getSupportedThinkingLevels、thinkingLevelMap、compat、samplingParams 以及 Authorization:null 的抑制语义。保持 providers/models 的管理员配置接口稳定；新增协议必须同时接入对应 AI 适配实现和测试，不能仅允许任意 api 字符串。
+
+release-smoke 现在从私有 models.json/settings.json 加载三个本地测试场景：思考开启及级别映射、关闭思考、仅自定义头且没有自动 Bearer。测试验证真实发出的请求体和请求头；未运行不能宣称完整模型接入已通过。
+
+私有模型和设置文件不进入 dist，模型文件变化或提示词更新后需重启服务。每次更新核心适配导出后重新构建，不复用旧 framework.bundle.mjs。

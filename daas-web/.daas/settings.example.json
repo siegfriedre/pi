@@ -1,12 +1,8 @@
 {
-  "modelContext": 65536,
-  "modelMaxTokens": 4096,
-  "modelCompat": {
-    "supportsStore": false,
-    "supportsDeveloperRole": false,
-    "supportsReasoningEffort": false,
-    "maxTokensField": "max_tokens"
-  },
+  "defaultProvider": "deepseek",
+  "defaultModel": "deepseek-flash",
+  "defaultThinkingLevel": "high",
+  "modeModels": {},
   "operations": {},
   "readApiIds": []
 }

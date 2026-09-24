@@ -1,6 +1,7 @@
 node_modules/
 runtime-data/
 .daas/settings.json
+.daas/models.json
 .daas/*.local.*
 .env
 .env.*

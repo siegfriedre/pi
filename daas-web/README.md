@@ -40,14 +40,18 @@ daas-web/
     store.ts                      单实例会话/结果/产物存储
     adapters/
       framework-entry.ts          唯一上游源码入口
-      model.ts                    模型循环适配与产品身份
+      model.ts                    模型循环适配
       platform.ts                 现有 DaaS 接口适配
+    models.ts                     模型目录、凭据解析与模式选择
+    prompts.ts                    管理员提示词装配
   .daas/
     index.ts                      管理员批准入口，显式注册
     extensions/                   管理员业务工具
     skills/<name>/SKILL.md         技能正文
     skills/<name>/references/      参考文档
-    settings.example.json         配置示例
+    prompts/                      基础、公共业务和模式提示词
+    models.example.json           模型目录示例（真实文件不提交）
+    settings.example.json         默认选择与业务配置示例
   runtime-data/                   运行数据，已忽略、不进入注册目录
 ```
 
@@ -76,21 +80,23 @@ daas-web/
 
 ## 正式模型与网关接入
 
-复制 `.daas/settings.example.json` 为 `.daas/settings.json`；本地配置已在 `.gitignore` 中忽略。通过环境变量配置：
+模型调用仍使用 AI 核心包；配置现由独立的 `.daas/models.json` 管理，格式为 `providers → models`。`.daas/settings.json` 选择默认模型和模式模型。完整字段、示例、环境变量与兼容边界见 [MODELS.md](MODELS.md)。
 
 ```sh
+# 在仓库根目录；已有 settings.json 时只合并新增字段，不要覆盖接口映射。
+cp daas-web/.daas/models.example.json daas-web/.daas/models.json
+cp daas-web/.daas/settings.example.json daas-web/.daas/settings.json
+# 编辑 models.json 的公司网关地址，再由环境注入密钥。
+export DEEPSEEK_API_KEY='模型网关密钥'
 export DAAS_PUBLIC_ORIGIN='https://daas.company.example'
 export DAAS_GATEWAY_SECRET='由管理员生成的至少32字符随机密钥'
-export DAAS_MODEL_BASE_URL='https://model.company.example/v1'
-export DAAS_MODEL_ID='deepseek-flash'
-export DAAS_MODEL_KEY='模型网关密钥'
 export DAAS_PLATFORM_BASE_URL='https://data.company.example'
-# 可选：公司网关固定请求头，JSON 对象。仅放在服务器环境中。
-export DAAS_MODEL_HEADERS_JSON='{}'
-npm --prefix daas-web start
+npm start
 ```
 
-`.env.example` 只是示例，不会自动读取。正式模式不读取旧终端的配置、身份、项目资源或默认工具；公司网关的地址/密钥/自定义请求头需显式迁移。模型相关兼容参数通过 `settings.json` 的 `modelCompat` 调整。
+可用 `DAAS_MODELS_FILE` 指定容器只读挂载路径。模型 JSON、默认模型、环境密钥和 `.daas/prompts/` 在启动时加载，修改后重启；不读取旧 `.config`。新模型文件存在时不会被旧 DAAS_MODEL_* 隐式覆盖。仅默认文件缺失且没有指定路径时，保留旧环境变量方式用于迁移。文件错误不回退模型，不自动切成演示。
+
+提示词按 base.md + common.md + developer.md/analyst.md 组合，不包含终端应用的身份或配置。reasoning、thinkingLevelMap 和默认思考级别来自配置，不再固定关闭。当前只支持 openai-completions 协议；不支持配置中的 !命令、OAuth 或自动模型目录发现，未新增依赖。
 
 应用在现有 SSO/网关之后运行，**不能直接信任浏览器自行传入的 userId、tenant 或 role**。正式接入适配点在 `safety.ts::authenticate`。本版本提供一个明确的签名网关契约：网关验证用户登录、读取最新空间和模式权限后，覆盖客户端同名请求头，并在每次请求中注入：
 
@@ -162,7 +168,7 @@ npm --prefix daas-web run check:upstream
 npm --prefix daas-web run build:framework
 ```
 
-构建先检查依赖闭包，再将发布文件复制到仓库外、用本地模拟模型验证实际 bundle 的工具调用。全部通过后才替换原发布目录。构建输出 `daas-web/dist/`：SDK 打包为私有 `framework.bundle.mjs`；复制 DaaS 服务、前端、已批准扩展与示例配置，并保留第三方许可证。不会复制本地 settings.json、运行数据、源码映射或旧终端目录。该运行目录使用 Node 类型擦除启动管理员 TS 源码，不需要安装 CLI/TUI 或 tsx。生产运行只读代码和单独可写数据卷，不意味着允许运行模型提交的代码。
+构建先检查依赖闭包，再将发布文件复制到仓库外、用本地模拟模型验证实际 bundle 的工具调用。全部通过后才替换原发布目录。构建输出 `daas-web/dist/`：SDK 打包为私有 `framework.bundle.mjs`；复制 DaaS 服务、前端、已批准扩展与示例配置，并保留第三方许可证。不会复制本地 settings.json、models.json、运行数据、源码映射或旧终端目录。该运行目录使用 Node 类型擦除启动管理员 TS 源码，不需要安装 CLI/TUI 或 tsx。生产运行只读代码和单独可写数据卷，不意味着允许运行模型提交的代码。
 
 Dockerfile 不固定一个未知的公司镜像，要求显式传入已批准、已缓存的 Linux Node >=22.19 基础镜像（建议使用 digest）：
 
@@ -170,7 +176,7 @@ Dockerfile 不固定一个未知的公司镜像，要求显式传入已批准、
 docker build --build-arg BASE_IMAGE='你的内网Node镜像或digest' -t daas-agent-web daas-web
 ```
 
-部署时挂载 `settings.json` 为只读，使用 1000:1000 用户；只把 `/var/lib/daas` 作为可写数据目录。建议启用 `--read-only`、`--cap-drop=ALL`、`--security-opt=no-new-privileges`、内存/CPU/PID 配额，且不挂载 Docker socket、凭据目录和无关宿主目录。出站网络只开放模型网关及必要 DaaS 地址。不要把整个仓库绑定成可写工作目录。
+部署时挂载 `.daas/settings.json` 和 `.daas/models.json` 为只读（模型也可使用 DAAS_MODELS_FILE），使用 1000:1000 用户；只把 `/var/lib/daas` 作为可写数据目录。建议启用 `--read-only`、`--cap-drop=ALL`、`--security-opt=no-new-privileges`、内存/CPU/PID 配额，且不挂载 Docker socket、凭据目录和无关宿主目录。出站网络只开放模型网关及必要 DaaS 地址。不要把整个仓库绑定成可写工作目录。
 
 管理员代码在服务进程权限下运行，受控 context 是工程接口而非对恶意管理员代码的安全沙箱。固定模块不得对业务参数使用 eval、new Function、Shell 拼接或动态导入。耗时计算必须使用受信任的独立 Worker/服务并响应取消；同进程的 AbortSignal 无法强制打断不协作的同步死循环。
 
@@ -178,10 +184,10 @@ docker build --build-arg BASE_IMAGE='你的内网Node镜像或digest' -t daas-ag
 
 第一版采用文件持久化和进程内任务锁，**只支持单实例**。不要让多个容器写同一数据目录。会话、结果和产物绑定租户/用户/空间；默认最多 100 个可见会话、单会话 120 条消息、30 个结果、20 个产物。此版本没有定时清理、配额管理后台或数据库级审计；正式部署需要设置数据保留策略并定期归档。日志不记录全量参数、Token 或结果，工具轨迹持久化在会话中；高要求审计应接入公司的独立不可篡改审计系统。
 
-长对话仅取最近 16 条消息并限制单条长度，不提供完整终端的自动压缩/分支能力。重要旧条件缺失时助手应再次确认；结果通过 resultId 复用。模型文本在完成一次消息后返回页面，工具状态通过轮询逐步出现，不是逐 Token 展示。展示层只清理助手叙述和生成的产品标题中的已知上游品牌，不篡改用户输入、SQL 或业务原始数据；身份问题“你是谁”有不依赖模型的确定性回复。提示词和品牌过滤不是对任意提示攻击的数学保证。
+长对话仅取最近 16 条消息并限制单条长度，不提供完整终端的自动压缩/分支能力。重要旧条件缺失时助手应再次确认；结果通过 resultId 复用。模型文本在完成一次消息后返回页面，工具状态通过轮询逐步出现，不是逐 Token 展示。产品品牌由提示词、固定身份回答和界面维护；身份规范化仅处理自我介绍前缀，不对 SQL、变量或正文做全局品牌替换；身份问题“你是谁”有不依赖模型的确定性回复。提示词和品牌过滤不是对任意提示攻击的数学保证。
 
-首版交付记录包含 44 项应用离线测试。此次依赖裁剪新增项目/锁文件与 bundle 边界测试，并提供构建后隔离验证脚本。变更包中的 `VALIDATION.json` 记录本次实际执行结果；不要把未执行的完整构建或公司联调视为已通过。
+本次模型与提示词配置更新实际通过 97 项离线测试，覆盖配置解析、模式选择、思考级别、凭据隔离、提示词装配、发布过滤以及既有业务与 HTTP 回归。应用级类型检查使用当前环境的 TypeScript 5.8.3 与可用 Node 类型声明通过；测试运行于 Node 22.16.0 的类型擦除模式，不改变生产最低 Node >=22.19.0 或项目固定工具版本。
 
-当前受限执行环境没有三份完整上游源码及固定 npm 依赖，不能运行真实 SDK 契约、完整打包、Docker 或公司模型/API 联调。请在准备好依赖的工作区执行 `npm run check:upstream` 和 `npm run build`。提示词和品牌过滤不是对任意提示攻击的数学保证。
+当前受限执行环境没有三份完整上游源码及固定 npm 依赖，完整 `npm run check` 停在源码目录检查；未运行真实 SDK 契约、完整打包、Docker 或公司模型/API 联调。模型选项转发的单元测试使用了接口替身，真实请求体与请求头的 bundle 验证脚本已提供但未执行。请在准备好依赖的完整工作区执行 `npm run check`、`npm run check:upstream` 和 `npm run build`。
 
 升级和维护请看 `UPGRADE.md`。

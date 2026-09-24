@@ -5,6 +5,7 @@ import { promisify } from 'node:util';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { checkBundle, checkProject } from '../scripts/project.mjs';
+import { releaseCopyFilter } from '../scripts/release-policy.mjs';
 
 // Build-time dependencies only. Never install/upgrade packages or modify core snapshots here.
 const root = dirname(fileURLToPath(import.meta.url));
@@ -16,10 +17,11 @@ if (esbuild.version !== '0.28.1') throw new Error('Use the pinned esbuild 0.28.1
 const stage = await mkdtemp(join(root, '.dist-staging-'));
 const run = promisify(execFile);
 try {
+  const filter = await releaseCopyFilter(root);
   for (const folder of ['server', 'public', '.daas']) {
     await cp(join(root, folder), join(stage, folder), {
       recursive: true,
-      filter: source => !/settings\.json$|\.local\.|framework-entry\.ts$|framework\.bundle\.mjs(?:\.map)?$/.test(source),
+      filter,
     });
   }
   const built = await esbuild.build({

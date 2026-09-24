@@ -42,6 +42,12 @@ npm run demo
 
 旧终端配置、启动脚本、远程桥接和不适用的工作流/测试入口也移除。Git 历史和 `company-deepseek` 不受影响；需要恢复时按 `daas-web/UPGRADE.md` 操作。
 
+## 独立模型与提示词配置
+
+模型定义位于 `daas-web/.daas/models.json`，默认模型与思考级别在 `.daas/settings.json`；格式沿用 providers/models，支持多个兼容网关和按开发/分析模式选择。密钥通过 `$ENV`/`${ENV}` 引用环境变量，不执行配置中的命令。`DAAS_MODELS_FILE` 可以指定只读挂载路径。模型、设置和提示词修改后重启服务，详情见 `daas-web/MODELS.md`。
+
+系统提示词位于 `.daas/prompts/`，按基础、公共业务、当前模式组合；不恢复终端提示词或旧 `.config`。浏览器与模型不具有修改这些文件或切换任意网关的权限。
+
 ## 固定依赖
 
 源码/构建机器的直接运行依赖：`openai 6.40.0`、`partial-json 0.1.7`、`typebox 1.3.27`。

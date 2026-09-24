@@ -15,7 +15,11 @@ const names = await readdir(source);
 assert.ok(!names.includes('packages') && !names.includes('node_modules'));
 await access(join(source, 'server/adapters/framework.bundle.mjs'));
 await access(join(source, 'licenses/framework-LICENSE'));
-await assert.rejects(access(join(source, '.daas/settings.json')), 'Private configuration must be mounted separately.');
+for (const file of ['settings.json', 'models.json']) {
+  await assert.rejects(access(join(source, '.daas', file)), 'Private configuration must be mounted separately.');
+}
+await access(join(source, '.daas/prompts/base.md'));
+await access(join(source, '.daas/models.example.json'));
 const temp = await mkdtemp(join(tmpdir(), 'daas-release-'));
 try {
   const copy = join(temp, 'app');

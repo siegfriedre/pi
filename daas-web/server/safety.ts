@@ -20,12 +20,13 @@ export function canonical(v: unknown): string {
   return JSON.stringify(v) ?? 'null';
 }
 export const escapeHtml = (s: unknown) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!);
-// Only user-visible prose is branded. Never rewrite SQL, argument values or source data.
+// Normalize only self-identification, never arbitrary occurrences in SQL, identifiers or data.
+// Product prompts/UI and fixed identity replies are the main branding controls, not text rewriting.
 export function brand(text: string): string {
-  return text.replace(/@(?:earendil-works|mariozechner)\/pi[\w/-]*/gi, 'DaaS Agent')
-    .replace(/\.pi(?=[/\\\s"'`]|$)/g, '.daas')
-    .replace(/\bpi(?:[- ](?:coding[- ]agent|agent|mono))?\b/gi, 'DaaS')
-    .replace(/\b(?:Claude Code|ChatGPT)\b/gi, 'DaaS Agent');
+  const upstreamName = '(?:pi(?:[- ](?:coding[- ]agent|agent|mono))?|Claude Code|ChatGPT)';
+  const chinese = new RegExp(`(^(?:我是|我叫|我的名字是|我的身份是)\\s*)${upstreamName}(?=$|[\\s，。！!：:；;、])`, 'i');
+  const english = new RegExp(`(^(?:I am|I'm|My name is)\\s+)${upstreamName}(?=$|[\\s,.;!:])`, 'i');
+  return text.replace(chinese, '$1DaaS Agent').replace(english, '$1DaaS Agent');
 }
 export function publicError(e: unknown): { code: string; message: string } {
   return e instanceof AppError ? { code: e.code, message: brand(e.message) }
